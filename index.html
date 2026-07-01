@@ -207,6 +207,22 @@
   .theater-info h3{ font-size: 19px; font-weight: 700; margin: 0 0 8px; }
   .theater-info .theater-meta{ font-size: 12.5px; color: var(--muted-2); margin-bottom: 10px; }
   .theater-info p{ font-size: 13.5px; color: #ccc; line-height:1.6; margin:0; }
+  .notice-360{
+    display:flex; align-items:center; flex-wrap:wrap; gap: 10px;
+    background: rgba(232,179,61,0.1); border: 1px solid rgba(232,179,61,0.35);
+    border-radius: 7px; padding: 10px 12px; margin-bottom: 12px;
+    font-size: 12.5px; color: #f0d18a; line-height:1.5;
+  }
+  .notice-360 a{
+    color: #111; background: #f0d18a; text-decoration:none; font-weight:700;
+    padding: 5px 11px; border-radius: 5px; font-size: 12px; white-space:nowrap;
+  }
+  .notice-360 a:hover{ background: #ffe0a0; }
+  .badge-360{
+    position:absolute; top:7px; right:7px; z-index:3;
+    background: rgba(0,0,0,0.75); color:#f0d18a; font-size:9.5px; font-weight:700;
+    padding: 2px 6px; border-radius: 4px; letter-spacing:0.02em;
+  }
   .theater-list{
     flex: 0 0 340px; border-left: 1px solid var(--line);
     overflow-y: auto; padding: 8px;
@@ -313,6 +329,7 @@
         <div class="theater-info">
           <h3 id="theaterVideoTitle">-</h3>
           <div class="theater-meta" id="theaterVideoDate">-</div>
+          <div class="notice-360" id="notice360" style="display:none;"></div>
           <p id="theaterVideoDesc"></p>
         </div>
       </div>
@@ -459,6 +476,20 @@
     return items; // playlistItems는 재생목록 내 순서(position) 그대로 반환됨
   }
 
+  // videos.list의 contentDetails.projection 값으로 360도 영상 여부를 확인 (최대 50개씩 배치 조회)
+  async function fetch360Map(ids){
+    const map = {};
+    for(let i = 0; i < ids.length; i += 50){
+      const batch = ids.slice(i, i + 50);
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${batch.join(',')}&key=${YT_API_KEY}`;
+      const data = await ytGet(url);
+      (data.items || []).forEach(item => {
+        map[item.id] = !!(item.contentDetails && item.contentDetails.projection === '360');
+      });
+    }
+    return map;
+  }
+
   async function fetchFromYoutube(){
     const channelId = await resolveChannelId();
     const playlists = await fetchAllPlaylists(channelId);
@@ -491,6 +522,18 @@
         result.push({ id: pl.id, title: cleanPlaylistTitle(pl.title), team: pl.team, videos: vids });
       }
     }
+
+    // 모든 영상의 360도 여부를 한 번에 조회해서 태그
+    const allIds = Array.from(new Set(result.flatMap(pl => pl.videos.map(v => v.youtubeId))));
+    if(allIds.length){
+      try{
+        const map360 = await fetch360Map(allIds);
+        result.forEach(pl => pl.videos.forEach(v => { v.is360 = !!map360[v.youtubeId]; }));
+      } catch(e){
+        // 360도 판별에 실패해도 전체 동기화는 계속 진행
+      }
+    }
+
     return result;
   }
 
@@ -557,6 +600,7 @@
     card.innerHTML = `
       <div class="thumb">
         ${thumbImg(v.youtubeId, v.title)}
+        ${v.is360 ? '<span class="badge-360">360°</span>' : ''}
         <div class="play-hover">
           <svg width="40" height="40" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/><path d="M10 8.5L16 12L10 15.5V8.5Z" fill="#fff"/></svg>
         </div>
@@ -582,6 +626,7 @@
         ${thumbImg(first.youtubeId, pl.title)}
         <span class="pl-badge">≡ 재생목록</span>
         <span class="pl-count">${pl.videos.length}개</span>
+        ${first.is360 ? '<span class="badge-360" style="right:auto; left:7px; bottom:7px; top:auto;">360°</span>' : ''}
       </div>
       <div class="plcard-info">
         <p class="vtitle">${pl.title}</p>
@@ -615,10 +660,18 @@
   function renderTheaterMain(){
     const v = theaterPlaylist.videos[theaterIndex];
     document.getElementById('theaterVideoWrap').innerHTML =
-      `<iframe src="https://www.youtube.com/embed/${v.youtubeId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+      `<iframe src="https://www.youtube.com/embed/${v.youtubeId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share" allowfullscreen></iframe>`;
     document.getElementById('theaterVideoTitle').textContent = v.title;
     document.getElementById('theaterVideoDate').textContent = fmtDate(v.date);
     document.getElementById('theaterVideoDesc').textContent = v.desc || '';
+    const notice = document.getElementById('notice360');
+    if(v.is360){
+      notice.style.display = 'flex';
+      notice.innerHTML = `<span>🌐 360° 영상이에요. 이 안에서 드래그해도 화면이 잘 안 움직이면, 유튜브에서 직접 보면 정상적으로 화면을 움직일 수 있어요.</span><a href="${watchUrl(v.youtubeId)}" target="_blank" rel="noopener noreferrer">유튜브에서 360°로 보기</a>`;
+    } else {
+      notice.style.display = 'none';
+      notice.innerHTML = '';
+    }
   }
   function renderTheaterList(){
     document.getElementById('theaterPlaylistTitle').textContent = `${theaterPlaylist.title} · ${theaterPlaylist.videos.length}개 영상`;
@@ -632,7 +685,7 @@
           <span class="n">${i + 1}</span>
           <span class="p"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="${i === theaterIndex ? 'var(--accent)' : '#fff'}"/></svg></span>
         </div>
-        <div class="ep-thumb">${thumbImg(v.youtubeId, v.title)}</div>
+        <div class="ep-thumb">${thumbImg(v.youtubeId, v.title)}${v.is360 ? '<span class="badge-360">360°</span>' : ''}</div>
         <div class="ep-info">
           <div class="ep-title-row">
             <span class="ep-title">${v.title}</span>
