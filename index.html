@@ -134,6 +134,7 @@
   .row-arrow.right{ right:0; background: linear-gradient(270deg, var(--bg), transparent); }
   .row-arrow.left{ left:0; }
 
+  /* -------- Video card (최신 업로드 / 검색 / 재생목록 펼침) -------- */
   .vcard{ position: relative; flex: 0 0 260px; border-radius: 6px; overflow: hidden; background: var(--card); cursor: pointer; transition: transform .2s ease, z-index 0s; }
   .vcard:hover{ transform: scale(1.06); z-index: 3; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
   .vcard .thumb{ position:relative; aspect-ratio: 16/9; background:#000; }
@@ -145,6 +146,50 @@
   .vcard-info .vmeta{ display:flex; align-items:center; gap: 6px; font-size: 11px; color: var(--muted-2); }
   .vcard-info .vmeta .dot{ width:3px; height:3px; border-radius:50%; background: var(--muted-2); }
 
+  /* -------- Playlist card (팀별 카테고리) -------- */
+  .plcard{ position: relative; flex: 0 0 260px; cursor: pointer; padding-top: 6px; padding-right: 6px; }
+  .plcard .stack{
+    position: absolute; top: 0; right: 0; left: 10px; aspect-ratio: 16/9;
+    background: #202020; border-radius: 6px; border: 1px solid #2a2a2a;
+    transform: translateY(4px);
+  }
+  .plcard .stack2{ left: 5px; background: #262626; transform: translateY(2px); z-index: 1; }
+  .plcard .plthumb{
+    position: relative; z-index: 2; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden;
+    background:#000; transition: transform .2s ease; margin-right: 6px;
+  }
+  .plcard .plthumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .plcard:hover .plthumb{ transform: scale(1.04); }
+  .plcard.active .plthumb{ outline: 2px solid var(--accent); outline-offset: -2px; }
+  .pl-badge{
+    position:absolute; top:7px; left:7px; z-index:3;
+    background: rgba(0,0,0,0.72); color:#fff; font-size:10.5px; font-weight:700;
+    padding: 3px 7px; border-radius: 4px; display:flex; align-items:center; gap:4px;
+    letter-spacing: 0.02em;
+  }
+  .pl-count{
+    position:absolute; bottom:7px; right:13px; z-index:3;
+    background: rgba(0,0,0,0.72); color:#fff; font-size:11px; font-weight:600;
+    padding: 3px 7px; border-radius: 4px;
+  }
+  .plcard-info{ padding: 9px 11px 2px 0; position: relative; z-index: 2; }
+  .plcard-info .vtitle{ font-size: 13px; font-weight: 600; margin: 0 0 4px; color: var(--text); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+  .plcard-info .vmeta{ font-size: 11px; color: var(--muted-2); }
+
+  /* -------- Playlist detail (펼쳐진 영상 리스트) -------- */
+  .pl-detail{
+    display:none;
+    margin: 6px 44px 0;
+    padding: 16px 0 4px;
+    border-top: 1px solid var(--line);
+  }
+  .pl-detail.open{ display:block; }
+  .pl-detail-head{ display:flex; align-items:baseline; gap:10px; margin-bottom: 10px; }
+  .pl-detail-head h3{ font-size: 14px; font-weight: 700; margin:0; color: var(--muted); }
+  .pl-detail-head .close-detail{ margin-left:auto; background:none; border:none; color:var(--muted-2); font-size:12px; cursor:pointer; }
+  .pl-detail-head .close-detail:hover{ color: var(--text); }
+  .pl-detail .row-scroll{ padding: 4px 0 8px; }
+
   .empty-row{ padding: 40px 44px; color: var(--muted); text-align:center; border: 1px dashed var(--line); border-radius: 10px; margin: 0 44px; }
 
   /* -------- Skeleton loading -------- */
@@ -152,36 +197,15 @@
   @keyframes shimmer{ 0%{ background-position: 100% 50%; } 100%{ background-position: 0 50%; } }
   .skeleton-card{ flex: 0 0 260px; aspect-ratio: 16/9; border-radius: 6px; }
 
-  /* -------- Player Modal -------- */
-  .modal-overlay{
-    position: fixed; inset:0; background: rgba(0,0,0,0.8);
-    display:flex; align-items:center; justify-content:center;
-    opacity:0; pointer-events:none; transition: opacity .18s ease; z-index: 200; padding: 24px;
-  }
-  .modal-overlay.show{ opacity:1; pointer-events:auto; }
-  .modal-box{ background: #141414; width: min(880px, 100%); border-radius: 10px; overflow:hidden; transform: translateY(14px); transition: transform .18s ease; }
-  .modal-overlay.show .modal-box{ transform: translateY(0); }
-  .modal-video{ position:relative; aspect-ratio: 16/9; background:#000; }
-  .modal-video iframe{ width:100%; height:100%; border:0; }
-  .modal-close{
-    position:absolute; top: 14px; right: 14px; z-index: 5;
-    width: 34px; height: 34px; border-radius: 50%; border:none;
-    background: rgba(20,20,20,0.85); color: var(--text); font-size: 16px; cursor:pointer;
-  }
-  .modal-info{ padding: 20px 26px 26px; }
-  .modal-info h3{ margin: 0 0 8px; font-size: 21px; font-weight: 700; }
-  .modal-info .modal-meta{ display:flex; gap:10px; align-items:center; color: var(--muted); font-size: 13px; margin-bottom: 10px; }
-  .modal-info .modal-meta .team-chip{ color: var(--text); background: rgba(255,255,255,0.12); padding: 2px 9px; border-radius: 4px; font-weight:600; font-size:12px; }
-  .modal-info p{ color: #d2d2d2; font-size: 14px; line-height: 1.6; margin:0; }
-
   @media (max-width: 640px){
     .topnav{ padding: 12px 16px; }
     .nav-search{ max-width: 140px; }
     .nav-updated{ display:none; }
     .hero-content, .row-head{ padding-left: 16px; padding-right: 16px; }
     .row-scroll{ padding-left: 16px; padding-right: 16px; }
+    .pl-detail{ margin-left: 16px; margin-right: 16px; }
     .hero{ height: 66vh; }
-    .vcard, .skeleton-card{ flex-basis: 200px; }
+    .vcard, .skeleton-card, .plcard{ flex-basis: 200px; }
   }
 </style>
 </head>
@@ -212,7 +236,7 @@
     </div>
     <p class="hero-desc" id="heroDesc"></p>
     <div class="hero-actions">
-      <button class="btn btn-play" id="heroPlayBtn">▶ 재생</button>
+      <button class="btn btn-play" id="heroPlayBtn">▶ 유튜브에서 재생</button>
       <button class="btn btn-more" id="heroMoreBtn">전체 영상 보기</button>
     </div>
   </div>
@@ -220,32 +244,19 @@
 
 <div class="rows" id="rows"></div>
 
-<div class="modal-overlay" id="playerOverlay">
-  <div class="modal-box">
-    <div class="modal-video" id="modalVideoWrap">
-      <button class="modal-close" id="modalClose">✕</button>
-    </div>
-    <div class="modal-info">
-      <h3 id="modalTitle">-</h3>
-      <div class="modal-meta"><span class="team-chip" id="modalTeam">-</span><span id="modalDate">-</span></div>
-      <p id="modalDesc"></p>
-    </div>
-  </div>
-</div>
-
 <script>
   // ---------- 설정 ----------
   const SITE_TITLE = "MATCHDAY"; // 원하는 팀/채널 이름으로 변경하세요
   document.getElementById('brandName').textContent = SITE_TITLE;
   document.title = SITE_TITLE + " · 경기 영상 아카이브";
 
-  // 유튜브 Data API 키와 채널 ID (본인 채널 값으로 이미 반영됨)
+  // 유튜브 Data API 키와 채널 ID
   // 주의: 이 키가 페이지 소스에 그대로 노출되므로, Google Cloud Console에서
   // "HTTP 리퍼러" 제한을 걸어 본인 GitHub Pages 주소에서만 쓰이게 해두세요.
   const YT_API_KEY = 'AIzaSyCqyeeAGa_KzjoTpkYFyLuApdgE_Ppw5KI';
   const YT_CHANNEL = 'UCu7KZfrfGZ7g-e9R6sHS3-w';
 
-  const STORAGE_KEY = 'team_video_archive_cache_v1';
+  const STORAGE_KEY = 'team_video_archive_cache_v2';
   const TEAM_ORDER = ['Weekdays Futsal', 'ERC', 'Shootdori'];
   const TEAM_ALIASES = {
     'weekdays futsal': 'Weekdays Futsal',
@@ -261,12 +272,14 @@
     return null;
   }
   function saveCache(list, syncedAt){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ videos: list, syncedAt }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ playlists: list, syncedAt }));
   }
 
-  let videos = [];
+  // teamPlaylists: [{ id, title, team, videos: [{id, title, date, youtubeId, desc}, ...] (재생목록 원래 순서) }]
+  let teamPlaylists = [];
   let searchTerm = '';
   let lastSyncedAt = null;
+  let openPlaylistId = null; // 현재 펼쳐진 재생목록 id
 
   function extractTeamFromPlaylistTitle(title){
     // 반각 [ ] 뿐 아니라 전각 [ ]（복사/붙여넣기 시 흔히 섞이는 문자）도 인식
@@ -280,12 +293,33 @@
     const key = rawTeam.trim().toLowerCase().replace(/\s+/g, ' ');
     return TEAM_ALIASES[key] || null;
   }
+  function cleanPlaylistTitle(title){
+    // 카드에 표시할 때는 [팀명] 부분을 지우고 나머지만 보여줌
+    return title.replace(/[\[\uFF3B]\s*[^\]\uFF3D]+?\s*[\]\uFF3D]/, '').trim() || title;
+  }
   function fmtDate(d){
+    if(!d) return '-';
     const dt = new Date(d + 'T00:00:00');
     return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
   }
-  function thumb(id){ return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
-  function visibleVideos(){ return videos.filter(v => TEAM_ORDER.includes(v.team)); }
+  // 영상 재생시간 중간(약 50%) 지점의 자동 생성 프리뷰 프레임.
+  // 유튜브가 모든 영상에 대해 이 프레임을 만들어주는 건 아니라서, 실패 시 기본 썸네일로 대체됩니다.
+  function thumbMid(id){ return `https://img.youtube.com/vi/${id}/2.jpg`; }
+  function thumbFallback(id){ return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
+  function thumbImg(id, alt){
+    return `<img src="${thumbMid(id)}" alt="${alt}" loading="lazy" onerror="this.onerror=null;this.src='${thumbFallback(id)}'">`;
+  }
+  function watchUrl(id){ return `https://www.youtube.com/watch?v=${id}`; }
+  function openExternally(youtubeId){
+    window.open(watchUrl(youtubeId), '_blank', 'noopener,noreferrer');
+  }
+
+  function allVideosFlat(){
+    return teamPlaylists.filter(pl => TEAM_ORDER.includes(pl.team)).flatMap(pl => pl.videos);
+  }
+  function visiblePlaylists(){
+    return teamPlaylists.filter(pl => TEAM_ORDER.includes(pl.team) && pl.videos.length);
+  }
 
   function showBanner(html){
     const b = document.getElementById('statusBanner');
@@ -328,41 +362,42 @@
       pageToken = data.nextPageToken || '';
       guard++;
     } while(pageToken && guard < 10);
-    return items;
+    return items; // playlistItems는 재생목록 내 순서(position) 그대로 반환됨
   }
 
   async function fetchFromYoutube(){
     const channelId = await resolveChannelId();
     const playlists = await fetchAllPlaylists(channelId);
 
-    const teamPlaylists = playlists
+    const matched = playlists
       .map(p => {
         const rawTeam = extractTeamFromPlaylistTitle(p.snippet.title);
         return { id: p.id, title: p.snippet.title, team: normalizeTeam(rawTeam, p.snippet.title) };
       })
       .filter(p => p.team);
 
-    let result = [];
-    for(const pl of teamPlaylists){
-      const items = await fetchAllPlaylistItems(pl.id);
+    const result = [];
+    for(const pl of matched){
+      const items = await fetchAllPlaylistItems(pl.id); // 원래 순서 유지 (첫 번째 영상이 배열의 첫 항목)
+      const vids = [];
       items.forEach(item => {
         const s = item.snippet, cd = item.contentDetails;
         if(!s || !cd || !cd.videoId) return;
         if(s.title === 'Private video' || s.title === 'Deleted video') return;
         const dateStr = (cd.videoPublishedAt || s.publishedAt || '').slice(0, 10);
-        result.push({
+        vids.push({
           id: 'yt_' + cd.videoId,
           title: s.title,
-          team: pl.team,
           date: dateStr,
           youtubeId: cd.videoId,
           desc: s.description ? s.description.split('\n')[0].slice(0, 160) : ''
         });
       });
+      if(vids.length){
+        result.push({ id: pl.id, title: cleanPlaylistTitle(pl.title), team: pl.team, videos: vids });
+      }
     }
-    const dedup = {};
-    result.forEach(v => { dedup[v.youtubeId] = v; });
-    return Object.values(dedup);
+    return result;
   }
 
   async function runSync(isManual){
@@ -376,12 +411,13 @@
       } else {
         hideBanner();
       }
-      videos = fresh;
+      teamPlaylists = fresh;
       lastSyncedAt = new Date().toISOString();
       saveCache(fresh, lastSyncedAt);
+      openPlaylistId = null;
       render();
     } catch(err){
-      showBanner(`<b>불러오기 실패</b> ${err.message}${videos.length ? ' — 이전에 저장된 데이터를 표시하고 있어요.' : ''}`);
+      showBanner(`<b>불러오기 실패</b> ${err.message}${teamPlaylists.length ? ' — 이전에 저장된 데이터를 표시하고 있어요.' : ''}`);
     } finally {
       refreshBtn.classList.remove('spinning');
       updateNavTimestamp();
@@ -395,20 +431,21 @@
 
   // ---------- Hero ----------
   function renderHero(){
-    const sorted = visibleVideos().slice().sort((a,b) => b.date.localeCompare(a.date));
+    const sorted = allVideosFlat().slice().sort((a,b) => b.date.localeCompare(a.date));
     const hero = document.getElementById('hero');
     if(!sorted.length){
       hero.style.backgroundImage = '';
-      document.getElementById('heroTitle').textContent = videos.length === 0 && !lastSyncedAt ? '불러오는 중...' : '표시할 영상이 없어요';
+      document.getElementById('heroTitle').textContent = teamPlaylists.length === 0 && !lastSyncedAt ? '불러오는 중...' : '표시할 영상이 없어요';
       document.getElementById('heroTeam').textContent = '-';
       document.getElementById('heroDate').textContent = '-';
       document.getElementById('heroDesc').textContent = '';
       return null;
     }
     const v = sorted[0];
-    hero.style.backgroundImage = `url(${thumb(v.youtubeId)})`;
+    const team = teamPlaylists.find(pl => pl.videos.some(x => x.youtubeId === v.youtubeId));
+    hero.style.backgroundImage = `url(${thumbMid(v.youtubeId)}), url(${thumbFallback(v.youtubeId)})`;
     document.getElementById('heroTitle').textContent = v.title;
-    document.getElementById('heroTeam').textContent = v.team;
+    document.getElementById('heroTeam').textContent = team ? team.team : '';
     document.getElementById('heroDate').textContent = fmtDate(v.date);
     document.getElementById('heroDesc').textContent = v.desc || '';
     return v;
@@ -416,34 +453,84 @@
 
   // ---------- Rows ----------
   function teamOrderList(){
-    const present = Array.from(new Set(visibleVideos().map(v => v.team)));
+    const present = Array.from(new Set(visiblePlaylists().map(pl => pl.team)));
     return TEAM_ORDER.filter(t => present.includes(t));
   }
 
-  function makeCard(v){
+  function makeVideoCard(v){
     const card = document.createElement('div');
     card.className = 'vcard';
     card.innerHTML = `
       <div class="thumb">
-        <img src="${thumb(v.youtubeId)}" alt="${v.title}" loading="lazy">
+        ${thumbImg(v.youtubeId, v.title)}
         <div class="play-hover">
           <svg width="40" height="40" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/><path d="M10 8.5L16 12L10 15.5V8.5Z" fill="#fff"/></svg>
         </div>
       </div>
       <div class="vcard-info">
         <p class="vtitle">${v.title}</p>
-        <div class="vmeta"><span>${v.team}</span><span class="dot"></span><span>${fmtDate(v.date)}</span></div>
+        <div class="vmeta"><span>${fmtDate(v.date)}</span></div>
       </div>
     `;
-    card.querySelector('.thumb').addEventListener('click', () => openPlayer(v));
+    card.querySelector('.thumb').addEventListener('click', () => openExternally(v.youtubeId));
     return card;
   }
 
-  function makeRow(title, list, rowId){
+  function makePlaylistCard(pl){
+    const card = document.createElement('div');
+    card.className = 'plcard' + (openPlaylistId === pl.id ? ' active' : '');
+    const first = pl.videos[0];
+    const latest = pl.videos.slice().sort((a,b) => b.date.localeCompare(a.date))[0];
+    card.innerHTML = `
+      <div class="stack"></div>
+      <div class="stack stack2"></div>
+      <div class="plthumb">
+        ${thumbImg(first.youtubeId, pl.title)}
+        <span class="pl-badge">≡ 재생목록</span>
+        <span class="pl-count">${pl.videos.length}개</span>
+      </div>
+      <div class="plcard-info">
+        <p class="vtitle">${pl.title}</p>
+        <div class="vmeta">최신 ${fmtDate(latest.date)}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => togglePlaylist(pl));
+    return card;
+  }
+
+  function togglePlaylist(pl){
+    openPlaylistId = (openPlaylistId === pl.id) ? null : pl.id;
+    renderRows();
+    if(openPlaylistId){
+      requestAnimationFrame(() => {
+        const detail = document.getElementById('detail-' + pl.id);
+        if(detail) detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+  }
+
+  function makePlaylistDetail(pl){
+    const wrap = document.createElement('div');
+    wrap.className = 'pl-detail open';
+    wrap.id = 'detail-' + pl.id;
+    wrap.innerHTML = `
+      <div class="pl-detail-head">
+        <h3>${pl.title} · ${pl.videos.length}개 영상</h3>
+        <button class="close-detail">접기 ✕</button>
+      </div>
+      <div class="row-scroll" id="detail-scroll-${pl.id}"></div>
+    `;
+    const scrollEl = wrap.querySelector('.row-scroll');
+    pl.videos.forEach(v => scrollEl.appendChild(makeVideoCard(v))); // 재생목록 원래 순서 그대로 (첫 영상이 맨 앞)
+    wrap.querySelector('.close-detail').onclick = () => { openPlaylistId = null; renderRows(); };
+    return wrap;
+  }
+
+  function makeRow(title, items, rowId, isPlaylistRow){
     const block = document.createElement('div');
     block.className = 'row-block';
     block.innerHTML = `
-      <div class="row-head"><h2>${title}</h2><span class="row-count">${list.length}개</span></div>
+      <div class="row-head"><h2>${title}</h2><span class="row-count">${items.length}개</span></div>
       <div class="row-wrap">
         <button class="row-arrow left" data-row="${rowId}">‹</button>
         <div class="row-scroll" id="scroll-${rowId}"></div>
@@ -451,8 +538,8 @@
       </div>
     `;
     const scrollEl = block.querySelector('.row-scroll');
-    if(list.length){
-      list.forEach(v => scrollEl.appendChild(makeCard(v)));
+    if(items.length){
+      items.forEach(item => scrollEl.appendChild(isPlaylistRow ? makePlaylistCard(item) : makeVideoCard(item)));
     } else {
       const empty = document.createElement('div');
       empty.className = 'empty-row';
@@ -467,6 +554,11 @@
         s.scrollBy({ left: dir * (s.clientWidth * 0.9), behavior: 'smooth' });
       };
     });
+
+    if(isPlaylistRow){
+      const openPl = items.find(pl => pl.id === openPlaylistId);
+      if(openPl) block.appendChild(makePlaylistDetail(openPl));
+    }
     return block;
   }
 
@@ -485,33 +577,36 @@
     const rowsEl = document.getElementById('rows');
     rowsEl.innerHTML = '';
 
-    if(!videos.length && !lastSyncedAt){
+    if(!teamPlaylists.length && !lastSyncedAt){
       TEAM_ORDER.forEach(t => rowsEl.appendChild(makeSkeletonRow(t)));
       return;
     }
 
-    const pool = visibleVideos();
-
     if(searchTerm.trim()){
-      const filtered = pool.filter(v => v.title.toLowerCase().includes(searchTerm.toLowerCase()))
+      const filtered = allVideosFlat().filter(v => v.title.toLowerCase().includes(searchTerm.toLowerCase()))
         .sort((a,b) => b.date.localeCompare(a.date));
-      rowsEl.appendChild(makeRow(`"${searchTerm}" 검색 결과`, filtered, 'search'));
+      rowsEl.appendChild(makeRow(`"${searchTerm}" 검색 결과`, filtered, 'search', false));
       return;
     }
 
-    const latest = pool.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 12);
-    rowsEl.appendChild(makeRow('최신 업로드', latest, 'latest'));
+    const latest = allVideosFlat().slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 12);
+    rowsEl.appendChild(makeRow('최신 업로드', latest, 'latest', false));
 
     teamOrderList().forEach((team, i) => {
-      const list = pool.filter(v => v.team === team).sort((a,b) => b.date.localeCompare(a.date));
-      rowsEl.appendChild(makeRow(team, list, 'team' + i));
+      const list = visiblePlaylists().filter(pl => pl.team === team)
+        .sort((a,b) => {
+          const aLatest = a.videos.slice().sort((x,y) => y.date.localeCompare(x.date))[0].date;
+          const bLatest = b.videos.slice().sort((x,y) => y.date.localeCompare(x.date))[0].date;
+          return bLatest.localeCompare(aLatest);
+        });
+      rowsEl.appendChild(makeRow(team, list, 'team' + i, true));
     });
   }
 
   function render(){
     const heroVideo = renderHero();
     renderRows();
-    document.getElementById('heroPlayBtn').onclick = () => { if(heroVideo) openPlayer(heroVideo); };
+    document.getElementById('heroPlayBtn').onclick = () => { if(heroVideo) openExternally(heroVideo.youtubeId); };
   }
 
   document.getElementById('heroMoreBtn').onclick = () => {
@@ -522,6 +617,7 @@
   // ---------- Search ----------
   document.getElementById('searchInput').addEventListener('input', e => {
     searchTerm = e.target.value;
+    openPlaylistId = null;
     renderRows();
   });
 
@@ -530,33 +626,14 @@
     document.getElementById('topnav').classList.toggle('solid', window.scrollY > 40);
   });
 
-  // ---------- Player Modal ----------
-  const playerOverlay = document.getElementById('playerOverlay');
-  const modalVideoWrap = document.getElementById('modalVideoWrap');
-  function openPlayer(v){
-    modalVideoWrap.innerHTML = `<button class="modal-close" id="modalClose">✕</button><iframe src="https://www.youtube.com/embed/${v.youtubeId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    document.getElementById('modalClose').onclick = closePlayer;
-    document.getElementById('modalTitle').textContent = v.title;
-    document.getElementById('modalTeam').textContent = v.team;
-    document.getElementById('modalDate').textContent = fmtDate(v.date);
-    document.getElementById('modalDesc').textContent = v.desc || '';
-    playerOverlay.classList.add('show');
-  }
-  function closePlayer(){
-    playerOverlay.classList.remove('show');
-    modalVideoWrap.innerHTML = `<button class="modal-close" id="modalClose">✕</button>`;
-  }
-  playerOverlay.addEventListener('click', e => { if(e.target === playerOverlay) closePlayer(); });
-  document.addEventListener('keydown', e => { if(e.key === 'Escape') closePlayer(); });
-
   // ---------- 새로고침 버튼 ----------
   document.getElementById('refreshBtn').onclick = () => runSync(true);
 
   // ---------- 초기 로드 ----------
   (function init(){
     const cached = loadCache();
-    if(cached && cached.videos && cached.videos.length){
-      videos = cached.videos;
+    if(cached && cached.playlists && cached.playlists.length){
+      teamPlaylists = cached.playlists;
       lastSyncedAt = cached.syncedAt;
       updateNavTimestamp();
       render();
