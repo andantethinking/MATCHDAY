@@ -321,6 +321,7 @@
   </div>
   <button type="button" class="btn-primary" id="syncBtn" style="background:#1f6feb;">지금 동기화</button>
   <p class="hint" id="syncStatus" style="margin-top:8px;">아직 동기화한 적 없어요.</p>
+  <div id="syncLog" style="font-size:11.5px; color:var(--muted-2); line-height:1.6; margin-top:6px; display:none;"></div>
 
   <div class="admin-divider"></div>
   <h2 style="font-size:15px;">영상 직접 추가</h2>
@@ -401,7 +402,7 @@
   function loadConfig(){
     const raw = localStorage.getItem(CONFIG_KEY);
     if(raw){ try { return JSON.parse(raw); } catch(e){} }
-    return { apiKey: '', channel: '', lastSync: null };
+    return { apiKey: '', channel: '', lastSync: null, hasSynced: false };
   }
   function saveConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
   let ytConfig = loadConfig();
@@ -412,8 +413,10 @@
 
   // ---------- YouTube 자동 동기화 ----------
   function extractTeamFromPlaylistTitle(title){
-    const m = title.match(/\[(.+?)\]/);
-    return m ? m[1].trim() : null;
+    // 반각 [ ] 뿐 아니라 전각 [ ]（복사/붙여넣기 시 흔히 섞이는 문자）도 인식
+    const m = title.match(/[\[\uFF3B]\s*([^\]\uFF3D]+?)\s*[\]\uFF3D]/);
+    if(!m) return null;
+    return m[1].trim().replace(/\s+/g, ' ');
   }
 
   async function ytGet(url){
@@ -437,7 +440,7 @@
     let pageToken = '';
     let guard = 0;
     do {
-      const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&channelId=${channelId}&maxResults=50&key=${apiKey}${pageToken ? '&pageToken=' + pageToken : ''}`;
+      const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&channelId=${channelId}&maxResults=50&key=${apiKey}${pageToken ? '&pageToken=' + pageToken : ''}`;
       const data = await ytGet(url);
       playlists = playlists.concat(data.items || []);
       pageToken = data.nextPageToken || '';
@@ -464,11 +467,13 @@
     const apiKey = document.getElementById('ytApiKey').value.trim();
     const channelInput = document.getElementById('ytChannel').value.trim();
     const statusEl = document.getElementById('syncStatus');
+    const logEl = document.getElementById('syncLog');
+    logEl.style.display = 'none'; logEl.innerHTML = '';
     if(!apiKey || !channelInput){
       statusEl.textContent = 'API 키와 채널 정보를 모두 입력해 주세요.';
       return;
     }
-    ytConfig = { apiKey, channel: channelInput, lastSync: ytConfig.lastSync };
+    ytConfig = { ...ytConfig, apiKey, channel: channelInput };
     saveConfig(ytConfig);
 
     statusEl.textContent = '채널 확인 중...';
@@ -476,12 +481,26 @@
       const channelId = await resolveChannelId(apiKey, channelInput);
       statusEl.textContent = '재생목록 불러오는 중...';
       const playlists = await fetchAllPlaylists(apiKey, channelId);
-      const teamPlaylists = playlists
-        .map(p => ({ id: p.id, title: p.snippet.title, team: extractTeamFromPlaylistTitle(p.snippet.title) }))
-        .filter(p => p.team);
 
+      const parsed = playlists.map(p => ({
+        id: p.id,
+        title: p.snippet.title,
+        team: extractTeamFromPlaylistTitle(p.snippet.title),
+        count: (p.contentDetails && p.contentDetails.itemCount) ?? null
+      }));
+      const teamPlaylists = parsed.filter(p => p.team);
+
+      // 진단 로그: 채널에서 발견한 모든 재생목록과 매칭 여부
+      logEl.style.display = 'block';
+      logEl.innerHTML = '<b style="color:#ccc;">발견한 재생목록 (' + parsed.length + '개)</b><br>' +
+        parsed.map(p => `${p.team ? '✅' : '⬜️'} ${p.title} (${p.count ?? '?'}개) ${p.team ? '→ [' + p.team + ']' : '(팀명 없음, 건너뜀)'}`).join('<br>');
+
+      if(!parsed.length){
+        statusEl.textContent = '이 채널에서 재생목록을 찾지 못했어요. 채널 ID가 맞는지, 재생목록이 공개(Public)로 설정돼 있는지 확인해 주세요.';
+        return;
+      }
       if(!teamPlaylists.length){
-        statusEl.textContent = '제목에 [팀명]이 들어간 재생목록을 찾지 못했어요.';
+        statusEl.textContent = '재생목록은 찾았지만 제목에 [팀명] 형식이 없어요. 아래 목록을 확인해 주세요.';
         return;
       }
 
@@ -512,12 +531,18 @@
       synced.forEach(v => { dedup[v.youtubeId] = v; });
       synced = Object.values(dedup);
 
+      if(!synced.length){
+        statusEl.textContent = '팀명이 매칭된 재생목록은 있었지만, 그 안에 공개 영상이 없었어요. 재생목록/영상이 비공개나 미등록 상태는 아닌지 확인해 주세요.';
+        return;
+      }
+
       // 수동으로 추가한 영상(source !== 'yt')은 보존, 기존 yt 동기화 데이터는 교체
       const manual = videos.filter(v => v.source !== 'yt');
       videos = [...manual, ...synced];
       saveData();
 
       ytConfig.lastSync = new Date().toISOString();
+      ytConfig.hasSynced = true;
       saveConfig(ytConfig);
       statusEl.textContent = `동기화 완료: ${synced.length}개 영상 (${teamPlaylists.length}개 재생목록) · ${fmtDate(ytConfig.lastSync.slice(0,10))}`;
       render();
@@ -544,9 +569,14 @@
   }
   function thumb(id){ return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
 
+  // 동기화를 한 번이라도 성공했으면, 그 이후로는 유튜브에서 불러온 영상만 노출
+  function visibleVideos(){
+    return ytConfig.hasSynced ? videos.filter(v => v.source === 'yt') : videos;
+  }
+
   // ---------- Hero ----------
   function renderHero(){
-    const sorted = videos.slice().sort((a,b) => b.date.localeCompare(a.date));
+    const sorted = visibleVideos().slice().sort((a,b) => b.date.localeCompare(a.date));
     const hero = document.getElementById('hero');
     if(!sorted.length){
       hero.style.backgroundImage = '';
@@ -567,7 +597,7 @@
 
   // ---------- Rows ----------
   function teamOrderList(){
-    const present = Array.from(new Set(videos.map(v => v.team)));
+    const present = Array.from(new Set(visibleVideos().map(v => v.team)));
     const known = TEAM_ORDER.filter(t => present.includes(t));
     const extra = present.filter(t => !TEAM_ORDER.includes(t)).sort();
     return [...known, ...extra];
@@ -637,19 +667,20 @@
   function renderRows(){
     const rowsEl = document.getElementById('rows');
     rowsEl.innerHTML = '';
+    const pool = visibleVideos();
 
     if(searchTerm.trim()){
-      const filtered = videos.filter(v => v.title.toLowerCase().includes(searchTerm.toLowerCase()))
+      const filtered = pool.filter(v => v.title.toLowerCase().includes(searchTerm.toLowerCase()))
         .sort((a,b) => b.date.localeCompare(a.date));
       rowsEl.appendChild(makeRow(`"${searchTerm}" 검색 결과`, filtered, 'search'));
       return;
     }
 
-    const latest = videos.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 12);
+    const latest = pool.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 12);
     rowsEl.appendChild(makeRow('최신 업로드', latest, 'latest'));
 
     teamOrderList().forEach((team, i) => {
-      const list = videos.filter(v => v.team === team).sort((a,b) => b.date.localeCompare(a.date));
+      const list = pool.filter(v => v.team === team).sort((a,b) => b.date.localeCompare(a.date));
       rowsEl.appendChild(makeRow(team, list, 'team' + i));
     });
   }
@@ -696,11 +727,22 @@
   document.addEventListener('keydown', e => { if(e.key === 'Escape') closePlayer(); });
 
   // ---------- Admin ----------
+  // 주의: 이 비밀번호는 페이지 소스에 그대로 노출됩니다. 완전한 보안이 아니라
+  // '아무나 쉽게 못 누르게' 막는 용도예요. 원하는 값으로 바꿔서 사용하세요.
+  const ADMIN_PASSCODE = '270703';
+  let adminUnlocked = false;
+
   const adminPanel = document.getElementById('adminPanel');
   const panelOverlay = document.getElementById('panelOverlay');
   const adminToggle = document.getElementById('adminToggle');
 
   function openAdmin(){
+    if(!adminUnlocked){
+      const pw = prompt('관리자 비밀번호를 입력하세요');
+      if(pw === null) return;
+      if(pw !== ADMIN_PASSCODE){ alert('비밀번호가 올바르지 않습니다.'); return; }
+      adminUnlocked = true;
+    }
     adminPanel.classList.add('open'); panelOverlay.classList.add('show');
     adminMode = true; adminToggle.classList.add('on');
     document.getElementById('ytApiKey').value = ytConfig.apiKey || '';
@@ -802,7 +844,9 @@
   });
   document.getElementById('resetBtn').onclick = () => {
     if(!confirm('저장된 모든 영상 데이터를 초기 상태로 되돌릴까요? 이 작업은 되돌릴 수 없어요.')) return;
-    videos = SEED_DATA; saveData(); render();
+    videos = SEED_DATA; saveData();
+    ytConfig.hasSynced = false; saveConfig(ytConfig);
+    render();
   };
 
   render();
