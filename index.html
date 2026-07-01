@@ -188,7 +188,43 @@
   .pl-detail-head h3{ font-size: 14px; font-weight: 700; margin:0; color: var(--muted); }
   .pl-detail-head .close-detail{ margin-left:auto; background:none; border:none; color:var(--muted-2); font-size:12px; cursor:pointer; }
   .pl-detail-head .close-detail:hover{ color: var(--text); }
-  .pl-detail .row-scroll{ padding: 4px 0 8px; }
+
+  /* 넷플릭스 "회차 목록" 느낌의 세로형 에피소드 리스트 */
+  .ep-list{ display:flex; flex-direction:column; }
+  .ep-item{
+    display:flex; align-items:center; gap: 18px;
+    padding: 14px 10px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background .15s ease;
+  }
+  .ep-item:hover{ background: rgba(255,255,255,0.045); }
+  .ep-num{
+    flex: 0 0 30px; text-align:center;
+    font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 700; color: var(--muted-2);
+    position: relative; height: 24px; display:flex; align-items:center; justify-content:center;
+  }
+  .ep-num .n{ transition: opacity .15s ease; }
+  .ep-num .p{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    opacity:0; transition: opacity .15s ease;
+  }
+  .ep-item:hover .ep-num .n{ opacity:0; }
+  .ep-item:hover .ep-num .p{ opacity:1; }
+  .ep-thumb{
+    flex: 0 0 200px; aspect-ratio: 16/9; border-radius: 5px; overflow:hidden;
+    background:#000; position: relative;
+  }
+  .ep-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ep-info{ flex: 1; min-width:0; }
+  .ep-title-row{ display:flex; align-items:baseline; gap: 10px; margin-bottom: 4px; }
+  .ep-title{ font-size: 14.5px; font-weight: 600; color: var(--text); }
+  .ep-date{ font-size: 11.5px; color: var(--muted-2); white-space:nowrap; }
+  .ep-desc{
+    font-size: 12.5px; color: var(--muted); line-height: 1.5; margin:0;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
 
   .empty-row{ padding: 40px 44px; color: var(--muted); text-align:center; border: 1px dashed var(--line); border-radius: 10px; margin: 0 44px; }
 
@@ -200,6 +236,10 @@
   @media (max-width: 640px){
     .topnav{ padding: 12px 16px; }
     .nav-search{ max-width: 140px; }
+    .ep-item{ flex-wrap: wrap; }
+    .ep-num{ display:none; }
+    .ep-thumb{ flex-basis: 100%; }
+    .ep-info{ flex-basis: 100%; }
     .nav-updated{ display:none; }
     .hero-content, .row-head{ padding-left: 16px; padding-right: 16px; }
     .row-scroll{ padding-left: 16px; padding-right: 16px; }
@@ -509,6 +549,27 @@
     }
   }
 
+  function makeEpisodeItem(v, index){
+    const item = document.createElement('div');
+    item.className = 'ep-item';
+    item.innerHTML = `
+      <div class="ep-num">
+        <span class="n">${index + 1}</span>
+        <span class="p"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#fff"/></svg></span>
+      </div>
+      <div class="ep-thumb">${thumbImg(v.youtubeId, v.title)}</div>
+      <div class="ep-info">
+        <div class="ep-title-row">
+          <span class="ep-title">${v.title}</span>
+          <span class="ep-date">${fmtDate(v.date)}</span>
+        </div>
+        ${v.desc ? `<p class="ep-desc">${v.desc}</p>` : ''}
+      </div>
+    `;
+    item.addEventListener('click', () => openExternally(v.youtubeId));
+    return item;
+  }
+
   function makePlaylistDetail(pl){
     const wrap = document.createElement('div');
     wrap.className = 'pl-detail open';
@@ -518,10 +579,10 @@
         <h3>${pl.title} · ${pl.videos.length}개 영상</h3>
         <button class="close-detail">접기 ✕</button>
       </div>
-      <div class="row-scroll" id="detail-scroll-${pl.id}"></div>
+      <div class="ep-list" id="ep-list-${pl.id}"></div>
     `;
-    const scrollEl = wrap.querySelector('.row-scroll');
-    pl.videos.forEach(v => scrollEl.appendChild(makeVideoCard(v))); // 재생목록 원래 순서 그대로 (첫 영상이 맨 앞)
+    const listEl = wrap.querySelector('.ep-list');
+    pl.videos.forEach((v, i) => listEl.appendChild(makeEpisodeItem(v, i))); // 재생목록 원래 순서 그대로 (첫 영상이 1번)
     wrap.querySelector('.close-detail').onclick = () => { openPlaylistId = null; renderRows(); };
     return wrap;
   }
