@@ -419,6 +419,23 @@
     return m[1].trim().replace(/\s+/g, ' ');
   }
 
+  // 대괄호 안 표기가 아래 별칭 중 하나와 일치하면(대소문자/공백 무시) 정식 팀명으로 통합
+  const TEAM_ALIASES = {
+    'weekdays futsal': 'Weekdays Futsal',
+    'weekdays futsa': 'Weekdays Futsal',  // 흔한 오타 대응
+    'wf': 'Weekdays Futsal',
+    'erc': 'ERC',
+    'shootdori': 'Shootdori'
+  };
+
+  function normalizeTeam(rawTeam, playlistTitle){
+    // 제목 어디에든 '슛도리'가 들어가면 대괄호 표기와 무관하게 Shootdori로 통합
+    if(playlistTitle && playlistTitle.includes('슛도리')) return 'Shootdori';
+    if(!rawTeam) return null;
+    const key = rawTeam.trim().toLowerCase().replace(/\s+/g, ' ');
+    return TEAM_ALIASES[key] || null;
+  }
+
   async function ytGet(url){
     const res = await fetch(url);
     const data = await res.json();
@@ -482,25 +499,33 @@
       statusEl.textContent = '재생목록 불러오는 중...';
       const playlists = await fetchAllPlaylists(apiKey, channelId);
 
-      const parsed = playlists.map(p => ({
-        id: p.id,
-        title: p.snippet.title,
-        team: extractTeamFromPlaylistTitle(p.snippet.title),
-        count: (p.contentDetails && p.contentDetails.itemCount) ?? null
-      }));
+      const parsed = playlists.map(p => {
+        const rawTeam = extractTeamFromPlaylistTitle(p.snippet.title);
+        return {
+          id: p.id,
+          title: p.snippet.title,
+          rawTeam,
+          team: normalizeTeam(rawTeam, p.snippet.title),
+          count: (p.contentDetails && p.contentDetails.itemCount) ?? null
+        };
+      });
       const teamPlaylists = parsed.filter(p => p.team);
 
       // 진단 로그: 채널에서 발견한 모든 재생목록과 매칭 여부
       logEl.style.display = 'block';
       logEl.innerHTML = '<b style="color:#ccc;">발견한 재생목록 (' + parsed.length + '개)</b><br>' +
-        parsed.map(p => `${p.team ? '✅' : '⬜️'} ${p.title} (${p.count ?? '?'}개) ${p.team ? '→ [' + p.team + ']' : '(팀명 없음, 건너뜀)'}`).join('<br>');
+        parsed.map(p => {
+          if(p.team) return `✅ ${p.title} (${p.count ?? '?'}개) → ${p.team}`;
+          if(p.rawTeam) return `⬜️ ${p.title} (${p.count ?? '?'}개) — [${p.rawTeam}]는 ERC/Shootdori/Weekdays Futsal로 인식되지 않아 건너뜀`;
+          return `⬜️ ${p.title} (${p.count ?? '?'}개) — 대괄호 팀명 없음, 건너뜀`;
+        }).join('<br>');
 
       if(!parsed.length){
         statusEl.textContent = '이 채널에서 재생목록을 찾지 못했어요. 채널 ID가 맞는지, 재생목록이 공개(Public)로 설정돼 있는지 확인해 주세요.';
         return;
       }
       if(!teamPlaylists.length){
-        statusEl.textContent = '재생목록은 찾았지만 제목에 [팀명] 형식이 없어요. 아래 목록을 확인해 주세요.';
+        statusEl.textContent = '재생목록은 찾았지만 ERC / Shootdori / Weekdays Futsal로 인식되는 것이 없어요. 아래 목록을 확인해 주세요.';
         return;
       }
 
@@ -571,7 +596,8 @@
 
   // 동기화를 한 번이라도 성공했으면, 그 이후로는 유튜브에서 불러온 영상만 노출
   function visibleVideos(){
-    return ytConfig.hasSynced ? videos.filter(v => v.source === 'yt') : videos;
+    const base = ytConfig.hasSynced ? videos.filter(v => v.source === 'yt') : videos;
+    return base.filter(v => TEAM_ORDER.includes(v.team));
   }
 
   // ---------- Hero ----------
@@ -598,9 +624,7 @@
   // ---------- Rows ----------
   function teamOrderList(){
     const present = Array.from(new Set(visibleVideos().map(v => v.team)));
-    const known = TEAM_ORDER.filter(t => present.includes(t));
-    const extra = present.filter(t => !TEAM_ORDER.includes(t)).sort();
-    return [...known, ...extra];
+    return TEAM_ORDER.filter(t => present.includes(t));
   }
 
   function makeCard(v){
