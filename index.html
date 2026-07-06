@@ -613,7 +613,7 @@
   }
 
   // ---------- Hero (최신 5개 영상 5초 간격 순환) ----------
-  const HERO_ROTATE_MS = 5000;
+  const HERO_ROTATE_MS = 10000;
   let heroVideos = [];
   let heroIndex = 0;
   let heroTimer = null;
@@ -639,7 +639,7 @@
   function startHeroRotation(){
     stopHeroRotation();
     const sorted = allVideosFlat().slice().sort((a,b) => b.date.localeCompare(a.date));
-    heroVideos = sorted.slice(0, 5);
+    heroVideos = sorted.slice(0, 9);
     const hero = document.getElementById('hero');
     const dotsEl = document.getElementById('heroDots');
 
