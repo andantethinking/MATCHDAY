@@ -151,9 +151,6 @@
   .vcard .thumb .play-hover{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.25); opacity:0; transition: opacity .15s ease; }
   .vcard:hover .play-hover{ opacity:1; }
   .vcard-info{ padding: 9px 11px 11px; }
-  .vcard-info .vtitle{ font-size: 13px; font-weight: 600; margin: 0 0 4px; color: var(--text); line-height: 1.35; }
-  .vcard-info .vtitle .title-tag{ display:block; font-size: 10px; font-weight:700; letter-spacing:0.04em; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; }
-  .vcard-info .vtitle .title-part{ display:block; }
   .vcard-info .vmeta{ display:flex; align-items:center; gap: 6px; font-size: 11px; color: var(--muted-2); }
   .vcard-info .vmeta .dot{ width:3px; height:3px; border-radius:50%; background: var(--muted-2); }
 
@@ -689,9 +686,9 @@
         <div class="play-hover">
           <svg width="40" height="40" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.4)" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/><path d="M10 8.5L16 12L10 15.5V8.5Z" fill="#fff"/></svg>
         </div>
+        <div class="plthumb-caption">${titleHTML(v.title)}</div>
       </div>
       <div class="vcard-info">
-        <p class="vtitle">${titleHTML(v.title)}</p>
         <div class="vmeta"><span>${fmtDate(v.date)}</span></div>
       </div>
     `;
