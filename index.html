@@ -179,12 +179,19 @@
     letter-spacing: 0.02em;
   }
   .pl-count{
-    position:absolute; bottom:7px; right:13px; z-index:3;
+    position:absolute; top:7px; right:7px; z-index:3;
     background: rgba(0,0,0,0.72); color:#fff; font-size:11px; font-weight:600;
     padding: 3px 7px; border-radius: 4px;
   }
+  .plthumb-caption{
+    position:absolute; left:0; right:0; bottom:0; z-index:3;
+    padding: 26px 10px 8px;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.88) 100%);
+    color:#fff;
+  }
+  .plthumb-caption .title-tag{ display:block; font-size: 9.5px; font-weight:700; letter-spacing:0.04em; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; }
+  .plthumb-caption .title-part{ display:block; font-size: 12px; font-weight:600; line-height:1.32; color:#fff; }
   .plcard-info{ padding: 9px 11px 2px 0; position: relative; z-index: 2; }
-  .plcard-info .vtitle{ font-size: 13px; font-weight: 600; margin: 0 0 4px; color: var(--text); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
   .plcard-info .vmeta{ font-size: 11px; color: var(--muted-2); }
 
   /* -------- Theater 모달 (재생목록 클릭 시 전체 화면 재생) -------- */
@@ -422,8 +429,13 @@
       tag = m[1].trim();
       rest = (title.slice(0, m.index) + title.slice(m.index + m[0].length)).trim();
     }
-    const parts = rest.split('/').map(s => s.trim()).filter(Boolean);
-    return { tag, parts: parts.length ? parts : (rest ? [rest] : []) };
+    let parts = rest.split('/').map(s => s.trim()).filter(Boolean);
+    if(!parts.length && rest) parts = [rest];
+    // 제목 형식: "[팀명] 게임넘버 / 대진" → 표시 순서: 팀명 / 대진 / 게임넘버
+    if(parts.length >= 2){
+      parts = [parts[1], parts[0], ...parts.slice(2)];
+    }
+    return { tag, parts };
   }
   function titleHTML(title){
     const { tag, parts } = parseTitle(title);
@@ -696,13 +708,13 @@
       <div class="stack"></div>
       <div class="stack stack2"></div>
       <div class="plthumb">
-        ${thumbImg(first.youtubeId, pl.title)}
+        ${thumbImg(first.youtubeId, first.title)}
         <span class="pl-badge">≡ 재생목록</span>
         <span class="pl-count">${pl.videos.length}개</span>
-        ${first.is360 ? '<span class="badge-360" style="right:auto; left:7px; bottom:7px; top:auto;">360°</span>' : ''}
+        ${first.is360 ? '<span class="badge-360" style="right:auto; left:7px; top:32px; bottom:auto;">360°</span>' : ''}
+        <div class="plthumb-caption">${titleHTML(first.title)}</div>
       </div>
       <div class="plcard-info">
-        <p class="vtitle">${pl.title}</p>
         <div class="vmeta">최신 ${fmtDate(latest.date)}</div>
       </div>
     `;
