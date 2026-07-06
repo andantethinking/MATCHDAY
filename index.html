@@ -878,7 +878,14 @@
   });
 
   // ---------- 새로고침 버튼 ----------
-  document.getElementById('refreshBtn').onclick = () => runSync(true);
+  document.getElementById('refreshBtn').onclick = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    teamPlaylists = [];
+    lastSyncedAt = null;
+    closeTheater();
+    render(); // 캐시가 없는 상태이므로 로딩 스켈레톤부터 다시 보여줌
+    runSync(true);
+  };
 
   // ---------- 초기 로드 ----------
   (function init(){
