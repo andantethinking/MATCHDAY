@@ -97,7 +97,8 @@
     color: var(--accent); text-transform: uppercase; margin-bottom: 14px;
   }
   .hero-badge::before{ content: '●'; font-size: 8px; }
-  .hero{ transition: background-image .4s ease; }
+  .hero{ transition: background-image .4s ease; cursor: grab; touch-action: pan-y; }
+  .hero:active{ cursor: grabbing; }
   .hero h1{
     font-size: clamp(24px, 3.6vw, 42px); font-weight: 800; line-height: 1.2; letter-spacing: -0.02em;
     margin: 0 0 14px; text-shadow: 0 2px 14px rgba(0,0,0,0.4);
@@ -131,7 +132,9 @@
   .row-head .row-count{ font-size: 12px; color: var(--muted-2); }
   .row-wrap{ position: relative; }
   .row-wrap:hover .row-arrow{ opacity: 1; }
-  .row-scroll{ display:flex; gap: 6px; overflow-x: auto; scroll-behavior: smooth; padding: 4px 44px 12px; scrollbar-width: none; }
+  .row-scroll{ display:flex; gap: 6px; overflow-x: auto; scroll-behavior: smooth; padding: 4px 44px 12px; scrollbar-width: none; cursor: grab; }
+  .row-scroll.dragging{ cursor: grabbing; scroll-behavior: auto; user-select: none; }
+  .row-scroll.dragging *{ pointer-events: none; }
   .row-scroll::-webkit-scrollbar{ display:none; }
   .row-arrow{
     position:absolute; top:0; bottom: 12px; width: 44px;
@@ -819,7 +822,35 @@
         s.scrollBy({ left: dir * (s.clientWidth * 0.9), behavior: 'smooth' });
       };
     });
+    if(items.length) enableDragScroll(scrollEl);
     return block;
+  }
+
+  // 마우스로 클릭한 채 좌우로 드래그하면 가로 스크롤 목록이 따라 움직이도록 함
+  // (터치는 브라우저 기본 스와이프 스크롤을 그대로 사용)
+  function enableDragScroll(el){
+    let isDown = false, startX = 0, startScroll = 0, moved = false;
+    el.addEventListener('pointerdown', e => {
+      if(e.pointerType !== 'mouse') return;
+      isDown = true; moved = false;
+      startX = e.clientX; startScroll = el.scrollLeft;
+      el.classList.add('dragging');
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', e => {
+      if(!isDown) return;
+      const dx = e.clientX - startX;
+      if(Math.abs(dx) > 5) moved = true;
+      el.scrollLeft = startScroll - dx;
+    });
+    const endDrag = () => { isDown = false; el.classList.remove('dragging'); };
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointerleave', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+    // 드래그로 카드가 움직였다면, 손을 뗄 때 발생하는 클릭(재생/열기)은 무시
+    el.addEventListener('click', e => {
+      if(moved){ e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
   }
 
   function makeSkeletonRow(title){
@@ -873,6 +904,35 @@
     const first = document.querySelector('.row-block');
     if(first) first.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // 히어로 배너를 좌우로 드래그(마우스)하거나 스와이프(터치)하면 슬라이드 전환
+  (function enableHeroSwipe(){
+    const hero = document.getElementById('hero');
+    let startX = null, startY = 0, dragging = false, horizontal = false;
+    hero.addEventListener('pointerdown', e => {
+      startX = e.clientX; startY = e.clientY; dragging = true; horizontal = false;
+    });
+    hero.addEventListener('pointermove', e => {
+      if(!dragging) return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if(!horizontal && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) horizontal = true;
+      if(horizontal) e.preventDefault(); // 가로 드래그로 판단될 때만 기본 스크롤 방지
+    });
+    function endSwipe(e){
+      if(!dragging || startX === null) return;
+      dragging = false;
+      const dx = e.clientX - startX;
+      startX = null;
+      if(!heroVideos.length || heroVideos.length < 2) return;
+      if(Math.abs(dx) < 40) return; // 살짝 움직인 건 클릭으로 간주
+      stopHeroRotation();
+      const next = dx < 0 ? (heroIndex + 1) % heroVideos.length : (heroIndex - 1 + heroVideos.length) % heroVideos.length;
+      showHeroSlide(next);
+      heroTimer = setInterval(advanceHero, HERO_ROTATE_MS);
+    }
+    hero.addEventListener('pointerup', endSwipe);
+    hero.addEventListener('pointerleave', () => { dragging = false; startX = null; });
+  })();
 
   // ---------- Search ----------
   document.getElementById('searchInput').addEventListener('input', e => {
