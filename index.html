@@ -97,10 +97,19 @@
     color: var(--accent); text-transform: uppercase; margin-bottom: 14px;
   }
   .hero-badge::before{ content: '●'; font-size: 8px; }
+  .hero{ transition: background-image .4s ease; }
   .hero h1{
-    font-size: clamp(28px, 4.4vw, 48px); font-weight: 800; line-height: 1.12; letter-spacing: -0.02em;
+    font-size: clamp(24px, 3.6vw, 42px); font-weight: 800; line-height: 1.2; letter-spacing: -0.02em;
     margin: 0 0 14px; text-shadow: 0 2px 14px rgba(0,0,0,0.4);
   }
+  .hero h1 .title-tag{
+    display:block; font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .hero h1 .title-part{ display:block; }
+  .hero-dots{ display:flex; gap: 6px; margin-bottom: 16px; }
+  .hero-dots span{ width: 22px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.3); cursor:pointer; transition: background .2s ease; }
+  .hero-dots span.active{ background: var(--accent); }
   .hero-meta{ display:flex; align-items:center; gap: 10px; margin-bottom: 14px; font-size: 13.5px; color: var(--muted); }
   .hero-meta .team-chip{ color: var(--text); background: rgba(255,255,255,0.12); padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 12.5px; }
   .hero-desc{
@@ -142,7 +151,9 @@
   .vcard .thumb .play-hover{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.25); opacity:0; transition: opacity .15s ease; }
   .vcard:hover .play-hover{ opacity:1; }
   .vcard-info{ padding: 9px 11px 11px; }
-  .vcard-info .vtitle{ font-size: 13px; font-weight: 600; margin: 0 0 4px; color: var(--text); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+  .vcard-info .vtitle{ font-size: 13px; font-weight: 600; margin: 0 0 4px; color: var(--text); line-height: 1.35; }
+  .vcard-info .vtitle .title-tag{ display:block; font-size: 10px; font-weight:700; letter-spacing:0.04em; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; }
+  .vcard-info .vtitle .title-part{ display:block; }
   .vcard-info .vmeta{ display:flex; align-items:center; gap: 6px; font-size: 11px; color: var(--muted-2); }
   .vcard-info .vmeta .dot{ width:3px; height:3px; border-radius:50%; background: var(--muted-2); }
 
@@ -204,7 +215,9 @@
   .theater-video{ aspect-ratio: 16/9; background:#000; flex: 0 0 auto; }
   .theater-video iframe{ width:100%; height:100%; border:0; }
   .theater-info{ padding: 18px 22px 22px; }
-  .theater-info h3{ font-size: 19px; font-weight: 700; margin: 0 0 8px; }
+  .theater-info h3{ font-size: 19px; font-weight: 700; margin: 0 0 8px; line-height:1.3; }
+  .theater-info h3 .title-tag{ display:block; font-size: 12px; font-weight:700; letter-spacing:0.06em; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
+  .theater-info h3 .title-part{ display:block; }
   .theater-info .theater-meta{ font-size: 12.5px; color: var(--muted-2); margin-bottom: 10px; }
   .theater-info p{ font-size: 13.5px; color: #ccc; line-height:1.6; margin:0; }
   .notice-360{
@@ -252,8 +265,10 @@
   .ep-thumb{ flex: 0 0 120px; aspect-ratio: 16/9; border-radius: 4px; overflow:hidden; background:#000; position: relative; }
   .ep-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .ep-info{ flex: 1; min-width:0; }
-  .ep-title-row{ display:flex; flex-direction:column; gap: 2px; }
-  .ep-title{ font-size: 12.5px; font-weight: 600; color: var(--text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.35; }
+  .ep-title-row{ display:flex; flex-direction:column; gap: 3px; }
+  .ep-title{ font-size: 12.5px; font-weight: 600; color: var(--text); line-height:1.35; display:block; }
+  .ep-title .title-tag{ display:block; font-size: 9.5px; font-weight:700; letter-spacing:0.04em; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; }
+  .ep-title .title-part{ display:block; }
   .ep-date{ font-size: 10.5px; color: var(--muted-2); }
 
   .empty-row{ padding: 40px 44px; color: var(--muted); text-align:center; border: 1px dashed var(--line); border-radius: 10px; margin: 0 44px; }
@@ -308,6 +323,7 @@
       <span id="heroDate">-</span>
     </div>
     <p class="hero-desc" id="heroDesc"></p>
+    <div class="hero-dots" id="heroDots"></div>
     <div class="hero-actions">
       <button class="btn btn-play" id="heroPlayBtn">▶ 유튜브에서 재생</button>
       <button class="btn btn-more" id="heroMoreBtn">전체 영상 보기</button>
@@ -397,8 +413,26 @@
     const dt = new Date(d + 'T00:00:00');
     return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
   }
-  // 영상 재생시간 중간(약 50%) 지점의 자동 생성 프리뷰 프레임.
-  // 유튜브가 모든 영상에 대해 이 프레임을 만들어주는 건 아니라서, 실패 시 기본 썸네일로 대체됩니다.
+
+  // 영상 제목을 "[대괄호 내용]" 1줄 + "/"로 구분된 나머지 내용을 줄 단위로 분리
+  function parseTitle(title){
+    const m = title.match(/[\[\uFF3B]\s*([^\]\uFF3D]+?)\s*[\]\uFF3D]/);
+    let tag = null, rest = title;
+    if(m){
+      tag = m[1].trim();
+      rest = (title.slice(0, m.index) + title.slice(m.index + m[0].length)).trim();
+    }
+    const parts = rest.split('/').map(s => s.trim()).filter(Boolean);
+    return { tag, parts: parts.length ? parts : (rest ? [rest] : []) };
+  }
+  function titleHTML(title){
+    const { tag, parts } = parseTitle(title);
+    let html = '';
+    if(tag) html += `<span class="title-tag">${tag}</span>`;
+    parts.forEach(p => { html += `<span class="title-part">${p}</span>`; });
+    return html || title;
+  }
+
   // 최고 화질 썸네일 우선 사용. maxresdefault가 없는 영상은 실제로는 존재하지 않는데도
   // 작은 회색 플레이스홀더 이미지(120px 폭)를 반환하는 경우가 있어서, 로드된 이미지의
   // 실제 가로폭을 확인해 너무 작으면 항상 존재하는 고화질 대체 이미지로 바꿔치기함.
@@ -566,26 +600,65 @@
     el.textContent = lastSyncedAt ? `업데이트: ${fmtDate(lastSyncedAt.slice(0,10))}` : '';
   }
 
-  // ---------- Hero ----------
-  function renderHero(){
+  // ---------- Hero (최신 5개 영상 5초 간격 순환) ----------
+  const HERO_ROTATE_MS = 5000;
+  let heroVideos = [];
+  let heroIndex = 0;
+  let heroTimer = null;
+  let heroCurrentVideo = null;
+
+  function stopHeroRotation(){
+    if(heroTimer){ clearInterval(heroTimer); heroTimer = null; }
+  }
+
+  function showHeroSlide(i){
+    heroIndex = i;
+    const v = heroVideos[i];
+    heroCurrentVideo = v;
+    const team = teamPlaylists.find(pl => pl.videos.some(x => x.youtubeId === v.youtubeId));
+    setHeroBackground(v.youtubeId);
+    document.getElementById('heroTitle').innerHTML = titleHTML(v.title);
+    document.getElementById('heroTeam').textContent = team ? team.team : '';
+    document.getElementById('heroDate').textContent = fmtDate(v.date);
+    document.getElementById('heroDesc').textContent = v.desc || '';
+    document.querySelectorAll('#heroDots span').forEach((dot, idx) => dot.classList.toggle('active', idx === i));
+  }
+
+  function startHeroRotation(){
+    stopHeroRotation();
     const sorted = allVideosFlat().slice().sort((a,b) => b.date.localeCompare(a.date));
+    heroVideos = sorted.slice(0, 5);
     const hero = document.getElementById('hero');
-    if(!sorted.length){
+    const dotsEl = document.getElementById('heroDots');
+
+    if(!heroVideos.length){
       hero.style.backgroundImage = '';
       document.getElementById('heroTitle').textContent = teamPlaylists.length === 0 && !lastSyncedAt ? '불러오는 중...' : '표시할 영상이 없어요';
       document.getElementById('heroTeam').textContent = '-';
       document.getElementById('heroDate').textContent = '-';
       document.getElementById('heroDesc').textContent = '';
-      return null;
+      dotsEl.innerHTML = '';
+      heroCurrentVideo = null;
+      return;
     }
-    const v = sorted[0];
-    const team = teamPlaylists.find(pl => pl.videos.some(x => x.youtubeId === v.youtubeId));
-    setHeroBackground(v.youtubeId);
-    document.getElementById('heroTitle').textContent = v.title;
-    document.getElementById('heroTeam').textContent = team ? team.team : '';
-    document.getElementById('heroDate').textContent = fmtDate(v.date);
-    document.getElementById('heroDesc').textContent = v.desc || '';
-    return v;
+
+    dotsEl.innerHTML = heroVideos.map((_, i) => `<span data-i="${i}"></span>`).join('');
+    dotsEl.querySelectorAll('span').forEach(dot => {
+      dot.addEventListener('click', () => {
+        showHeroSlide(Number(dot.dataset.i));
+        stopHeroRotation();
+        if(heroVideos.length > 1) heroTimer = setInterval(advanceHero, HERO_ROTATE_MS);
+      });
+    });
+
+    showHeroSlide(0);
+    if(heroVideos.length > 1){
+      heroTimer = setInterval(advanceHero, HERO_ROTATE_MS);
+    }
+  }
+
+  function advanceHero(){
+    showHeroSlide((heroIndex + 1) % heroVideos.length);
   }
 
   // ---------- Rows ----------
@@ -606,7 +679,7 @@
         </div>
       </div>
       <div class="vcard-info">
-        <p class="vtitle">${v.title}</p>
+        <p class="vtitle">${titleHTML(v.title)}</p>
         <div class="vmeta"><span>${fmtDate(v.date)}</span></div>
       </div>
     `;
@@ -661,7 +734,7 @@
     const v = theaterPlaylist.videos[theaterIndex];
     document.getElementById('theaterVideoWrap').innerHTML =
       `<iframe src="https://www.youtube.com/embed/${v.youtubeId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share" allowfullscreen></iframe>`;
-    document.getElementById('theaterVideoTitle').textContent = v.title;
+    document.getElementById('theaterVideoTitle').innerHTML = titleHTML(v.title);
     document.getElementById('theaterVideoDate').textContent = fmtDate(v.date);
     document.getElementById('theaterVideoDesc').textContent = v.desc || '';
     const notice = document.getElementById('notice360');
@@ -688,7 +761,7 @@
         <div class="ep-thumb">${thumbImg(v.youtubeId, v.title)}${v.is360 ? '<span class="badge-360">360°</span>' : ''}</div>
         <div class="ep-info">
           <div class="ep-title-row">
-            <span class="ep-title">${v.title}</span>
+            <span class="ep-title">${titleHTML(v.title)}</span>
             <span class="ep-date">${fmtDate(v.date)}</span>
           </div>
         </div>
@@ -782,9 +855,9 @@
   }
 
   function render(){
-    const heroVideo = renderHero();
+    startHeroRotation();
     renderRows();
-    document.getElementById('heroPlayBtn').onclick = () => { if(heroVideo) openExternally(heroVideo.youtubeId); };
+    document.getElementById('heroPlayBtn').onclick = () => { if(heroCurrentVideo) openExternally(heroCurrentVideo.youtubeId); };
   }
 
   document.getElementById('heroMoreBtn').onclick = () => {
